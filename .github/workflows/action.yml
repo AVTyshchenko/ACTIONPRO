@@ -1,39 +1,46 @@
-name: CI_ACTION
+name: CI
 
-env: 
-  Application_Name: ACTION
-  Package_Name: Deploy ver - ${{ github.sha}}
+env:
+ EB_PACKAGE_S3_BUCKET_NAME : "app_package"
+ EB_APPLICATION-NAME       : "MySite"
+ EB_ENVIROMENT_NAME        : "My-site-env"
+ DEPLOY_PACKAGE_NAME       : "site_app_${{ github.sha }}.zip"
+
 
 on:
   push:
-   branches: main
-   # Allows you to run this workflow manually from the Actions tab - workflow_dispatch:
+    branches: main
 
 jobs:
 
-  Massage:
+  ci_part:
     runs-on: ubuntu-latest
+
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it - uses: actions/checkout@v1
-      - name: Task_No1
-        run : echo Hello, world!
-        
-      - name: Task_No2
-        run : |
-          echo See 
-          echo The power is your
-  
-  List:
-    runs-on: ubuntu-latest
-    needs: Massage
-    steps:
-      - name : PRINT
-        run : echo Deploy_name {{ env.Package_Name }}
-        
-      - name : ADD
+      - name: Git clone our repo
         uses: actions/checkout@v1
-      
-      - name : LS
-        run  : ls -la
+
+      - name: CHECK_REPO
+        run : ls -la
+
+      - name: Create ZIP deploy package
+        run : zip -r ${{ env.DEPLOY_PACKAGE_NAME }} ./ -x *.git*
+
+
+      - name: Configure my AWS Credential
+        uses: aws-action/configure-aws-credentials@v1
+        with:
+           aws-access-key-id    : $ {{ secrets.MY_AWS_ACCESS_KEY }}
+           aws-secret-access-key: $ {{ secrets.MY_AWS_SECRET_KEY }}
+           aws-region           : $ {{ secrets.AWS_REGION  }}
+
+
+      - name: Copy Deployment package to S3 bucket
+        run: aws s3 cp $ {{ env.DEPLOY_PACKAGE_NAME }} s3:// ${{ env.EB_PACKAGE_S3_BUCKET_NAME }} /
+
+
+      - name: Print CI finish
+        run: echo CI Pipeline part Finished successfully
+
   
   
